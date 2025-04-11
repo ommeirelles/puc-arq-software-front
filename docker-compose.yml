@@ -1,0 +1,20 @@
+version: '3'
+
+services:
+  soft-arq-front:
+    build:
+      context: .
+      dockerfile_inline: |
+        FROM node:lts-alpine
+        WORKDIR /app
+        COPY package*.json ./
+        RUN npm install
+        COPY . .
+        EXPOSE 5173
+    container_name: arq-soft-front
+    ports:
+      - "5173:5173"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    command: npm run dev -- --host
