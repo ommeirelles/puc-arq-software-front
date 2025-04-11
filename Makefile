@@ -10,4 +10,5 @@ run: build
 	docker run --rm -p $(exposedPort):$(exposedPort) $(imageName)
 
 dev:
+	- docker compose down --rmi all -v --remove-orphans
 	docker compose up --build --watch
