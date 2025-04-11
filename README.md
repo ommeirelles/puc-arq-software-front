@@ -6,17 +6,31 @@ This repository contains the frontend component of a microservices-based applica
 ## Project Description
 The frontend application serves as the user interface for our microservices ecosystem, providing a seamless and responsive experience for users while interacting with various backend services.
 
-## Architecture Overview
+## Running
 
-## Getting Started
+### Docker
 
-### Prerequisites
-- Node.js (lts recommended version - as of today this is 22.140)
-- npm or yarn package manager
+It's possible to run the *vite preview* using make (`make run`) or the *vite development* (`make dev`).
+Development serves the application with each change made, while preview uses a production build that needs to be rebuilt on each new change applied.
 
-### Installation
+*_It's also possible to run without make._*
+- Vite Preview
+    - `docker build -t puc-arq-soft-front .` 
+    - `docker run --rm -p 4173:4173 puc-arq-soft-front`
+    - Now your Docker should be running and exposing port 4173 for preview
+- Vite Development
+    - `docker compose up --build --watch` 
+    - Now your Docker should be running and exposing port 4173 for development work
+
+### Locally
+
+- Prerequisites
+    - Node.js (LTS recommended version - as of today this is 22.140)
+    - npm or yarn package manager
+
+
 1. Clone the repository
 2. Run `npm install` or `yarn install` to install dependencies
-3. Run `npm start` or `yarn start` to start the application
+3. Run `npm run preview` or `yarn preview` to preview the application
 
-
+## Architecture Overview
