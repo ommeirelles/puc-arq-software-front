@@ -10,3 +10,12 @@ export const ProductSchema = z.object({
 });
 
 export type Product = z.infer<typeof ProductSchema>;
+
+
+export const CartSchema = z.object({
+  id: z.coerce.string(),
+  deleted: z.boolean(),
+  guid: z.string().uuid(),
+});
+
+export type Cart = z.infer<typeof CartSchema>;
