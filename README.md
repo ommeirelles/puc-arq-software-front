@@ -34,3 +34,12 @@ Development serves the application with each change made, while preview uses a p
 3. Run `npm run preview` or `yarn preview` to preview the application
 
 ## Architecture Overview
+
+This app follows a microservice architecture where it communicates with the product service (fake store) and the cart service (the flask api that manages cart). 
+The intent was to create a fully functional service but didn´t had time to finish. 
+
+
+## System Architecture Diagram Overview
+
+![System Architecture](src/assets/arch.png)
+
