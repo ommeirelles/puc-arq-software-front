@@ -11,8 +11,7 @@ export abstract class Api {
       const respText = await response
         .text()
         .catch(() => "Error when trying to parse response to text");
-      console.error(respText);
-      return undefined;
+      throw new Error(respText);
     }
 
     const resp = await response.json();
@@ -33,60 +32,73 @@ export abstract class Api {
 
   protected async get<Ret>(
     path: string,
-    schemaValidation?: z.ZodSchema<Ret>
+    options: { schemaValidation?: z.ZodSchema<Ret> } & Parameters<
+      typeof fetch
+    >[1] = {}
   ): Promise<Ret | undefined> {
-    return this.toJSON(await fetch(`${this.apiUrl}/${path}`), schemaValidation);
+    return this.toJSON(
+      await fetch(`${this.apiUrl}/${path}`, { ...options, method: "GET" }),
+      options.schemaValidation
+    );
   }
 
   protected async post<Ret>(
     path: string,
-    body: unknown,
-    schemaValidation?: z.ZodSchema<Ret>
+    options: { schemaValidation?: z.ZodSchema<Ret> } & Parameters<
+      typeof fetch
+    >[1] = {}
   ): Promise<Ret | undefined> {
     return this.toJSON(
       await fetch(`${this.apiUrl}/${path}`, {
+        ...options,
         method: "POST",
-        body: JSON.stringify(body),
+        body: JSON.stringify(options.body),
       }),
-      schemaValidation
+      options.schemaValidation
     );
   }
 
   protected async put<Ret>(
     path: string,
-    body: unknown,
-    schemaValidation?: z.ZodSchema<Ret>
+    options: { schemaValidation?: z.ZodSchema<Ret> } & Parameters<
+      typeof fetch
+    >[1] = {}
   ): Promise<Ret | undefined> {
     return this.toJSON(
       await fetch(`${this.apiUrl}/${path}`, {
+        ...options,
         method: "PUT",
-        body: JSON.stringify(body),
+        body: JSON.stringify(options.body),
       }),
-      schemaValidation
+      options.schemaValidation
     );
   }
 
   protected async patch<Ret>(
     path: string,
-    body: unknown,
-    schemaValidation?: z.ZodSchema<Ret>
+    options: { schemaValidation?: z.ZodSchema<Ret> } & Parameters<
+      typeof fetch
+    >[1] = {}
   ): Promise<Ret | undefined> {
     return this.toJSON(
       await fetch(`${this.apiUrl}/${path}`, {
+        ...options,
         method: "PATCH",
-        body: JSON.stringify(body),
+        body: JSON.stringify(options.body),
       }),
-      schemaValidation
+      options.schemaValidation
     );
   }
 
   protected async delete<Ret>(
     path: string,
-    schemaValidation?: z.ZodSchema<Ret>
+    options: { schemaValidation?: z.ZodSchema<Ret> } & Parameters<
+      typeof fetch
+    >[1] = {}
   ): Promise<Ret | undefined> {
     return this.toJSON(
-      await fetch(`${this.apiUrl}/${path}`, { method: "DELETE" }),
-      schemaValidation
+      await fetch(`${this.apiUrl}/${path}`, { ...options, method: "DELETE" }),
+      options.schemaValidation
     );
   }
 }

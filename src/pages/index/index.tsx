@@ -2,6 +2,10 @@ import { useEffect, useRef, useState } from "react";
 import { ProductService } from "../../services/product";
 import { Product } from "./components/product";
 import { CartService } from "@src/services/cart";
+import { Header } from "@src/components/header";
+import { Loading } from "@src/components/loading";
+
+import "./index.css";
 
 function App() {
   const prodApi = useRef(new ProductService());
@@ -11,19 +15,32 @@ function App() {
     useState<Awaited<ReturnType<typeof prodApi.current.products>>>();
 
   useEffect(() => {
-    Promise.all([cartApi.current.getCart(), prodApi.current.products()]).then(([guid, prods]) => {
-      setCartGuid(guid);
-      setProducts(prods);
-    });
+    // cartApi.current.getCart().then((guid) => {
+    //   setCartGuid(guid);
+    // });
+    Promise.all([cartApi.current.getCart(), prodApi.current.products()]).then(
+      ([guid, prods]) => {
+        setCartGuid(guid);
+        setProducts(prods);
+      }
+    );
   }, []);
 
-  if (!cartGuid) return <div>Loading...</div>;
+  if (!cartGuid)
+    return (
+      <div className="w-full h-full flex items-center justify-center">
+        <Loading />
+      </div>
+    );
 
   return (
-    <div className="flex gap-8 flex-wrap px-4 py-16">
-      {products?.map((product) => (
-        <Product key={product.id} {...product} />
-      ))}
+    <div className="index-layout">
+      <Header />
+      <div className="flex gap-8 flex-wrap px-4 py-16 overflow-auto">
+        {products?.map((product) => (
+          <Product key={product.id} {...product} />
+        ))}
+      </div>
     </div>
   );
 }
