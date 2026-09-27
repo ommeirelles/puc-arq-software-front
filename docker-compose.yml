@@ -11,9 +11,8 @@ services:
 
   soft-arq-cart:
     build: ../puc-arq-soft-api/cart
-    container_name: arq-soft-cart
-    ports:
-      - "8000:8000"
+    deploy:
+      replicas: 3
     networks:
       - puc-arq-soft
     environment:
@@ -43,9 +42,8 @@ services:
 
   soft-arq-auth:
     build: ../puc-arq-soft-api/auth
-    container_name: arq-soft-auth
-    ports:
-      - "8001:8001"
+    deploy:
+      replicas: 3
     networks:
       - puc-arq-soft
     environment:
@@ -70,6 +68,20 @@ services:
           target: /app/src
         - action: rebuild
           path: ../puc-arq-soft-api/auth/requirements.txt
+
+  soft-arq-lb:
+    container_name: arq-soft-lb
+    image: nginx:1.27-alpine
+    ports:
+      - "8000:8000"
+      - "8001:8001"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    networks:
+      - puc-arq-soft
+    depends_on:
+      - soft-arq-cart
+      - soft-arq-auth
 
   soft-arq-cart-db:
     container_name: arq-soft-cart-db

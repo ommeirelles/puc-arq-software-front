@@ -25,12 +25,24 @@ Flask back-end) for user registration and authentication.
 flowchart LR
     User([User]) --> FE["Front-end SPA<br/>React + Vite · :4173"]
     FE -->|"GET /products"| FSA["Fake Store API<br/>fakestoreapi.com"]
-    FE -->|"Cart operations<br/>(create, add, remove, summary)"| BE["Cart API<br/>Flask · :8000"]
-    FE -->|"POST /user · POST /login<br/>GET /user"| AUTH["Auth API<br/>Flask · :8001"]
+    FE -->|"Cart operations<br/>(create, add, remove, summary)"| LB["nginx load balancer<br/>:8000 (cart) · :8001 (auth)"]
+    FE -->|"POST /user · POST /login<br/>GET /user"| LB
+    LB -->|"round-robin"| BE["Cart API ×3 replicas<br/>Flask · :8000"]
+    LB -->|"round-robin"| AUTH["Auth API ×3 replicas<br/>Flask · :8001"]
     BE -->|"Product details & prices"| FSA
+    BE -->|"JWT validation"| AUTH
     BE --> DB[("PostgreSQL<br/>soft-arq-cart-db · :5432")]
     AUTH --> AUTHDB[("PostgreSQL<br/>soft-arq-auth-db · :5432")]
 ```
+
+> **Design choice — horizontal scaling:** each back-end service runs **3
+> replicas** (`deploy.replicas` in the compose file) behind an **nginx load
+> balancer** (`soft-arq-lb`, config in [`./nginx/nginx.conf`](./nginx/nginx.conf))
+> that round-robins requests across the replicas. The load balancer publishes
+> the same host ports the services used to expose (`8000` for cart, `8001` for
+> auth), so this app needs no configuration change. This works because the
+> services are stateless: sessions are self-signed JWTs and carts are
+> identified by GUID, so any replica can serve any request.
 
 > **Design choice — one database per service:** each back-end service owns a
 > dedicated PostgreSQL container (`soft-arq-cart-db` for the cart API,
@@ -132,8 +144,9 @@ adjust the values if needed:
 It's possible to run the *vite preview* using make (`make run`) or the
 *vite development* server (`make dev`). Preview uses a production build that
 needs to be rebuilt on each new change applied, while development fires up the
-**full stack** — this app, both back-end APIs, one PostgreSQL container per
-back-end service, the OTEL collector and Jaeger —
+**full stack** — this app, both back-end APIs (3 replicas each) behind the
+nginx load balancer, one PostgreSQL container per back-end service, the OTEL
+collector and Jaeger —
 through the `docker-compose.yml` at this repository's root, syncing source
 changes into the containers (via `docker-compose --watch`).
 
