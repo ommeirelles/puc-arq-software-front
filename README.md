@@ -44,6 +44,13 @@ Key implementation points:
   the token is simply discarded.
 - The active cart is **session-less**: its GUID is created by the back-end and
   persisted in `localStorage` under the key `cart_guid`.
+- The store catalog can be filtered by category through a side panel
+  (`src/pages/store/components/category-filter.tsx`): each category is a checkbox
+  that includes/removes its products from the listing. Filtering happens entirely
+  on the front-end — no extra requests are made. The panel is responsive: on
+  desktop (`lg` and up) it renders side by side with the product grid and can be
+  collapsed to a slim strip; on smaller screens it becomes an overlay drawer
+  opened from a floating filter button (daisyUI `drawer` with `lg:drawer-open`).
 - Service layer in `src/services/`:
   - `api.ts` — abstract HTTP client (`get`/`post`/`put`/`patch`/`delete`) with
     optional Zod response validation.
