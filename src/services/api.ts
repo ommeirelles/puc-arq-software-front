@@ -22,6 +22,16 @@ function toRequestInit<Ret>(
   return init as RequestInit;
 }
 
+export class ApiError extends Error {
+  constructor(
+    public readonly status: number,
+    message: string
+  ) {
+    super(message);
+    this.name = "ApiError";
+  }
+}
+
 export abstract class Api {
   protected abstract apiUrl: string;
 
@@ -33,7 +43,7 @@ export abstract class Api {
       const respText = await response
         .text()
         .catch(() => "Error when trying to parse response to text");
-      throw new Error(respText);
+      throw new ApiError(response.status, respText);
     }
 
     const resp = await response.json();

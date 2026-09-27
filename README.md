@@ -50,7 +50,12 @@ Key implementation points:
   - `product.ts` — `ProductService`, a singleton that fetches products from the
     Fake Store API and caches them in memory by ID.
   - `cart.ts` — `CartService`, a singleton that creates/retrieves the cart,
-    fetches the cart summary, and adds/removes items through the back-end API.
+    fetches the cart summary (items grouped by product, with quantities), and
+    adds/removes items through the back-end API. Every request carries the
+    `Authorization: Bearer` JWT; on `401` the session and cart are cleared and
+    the app redirects to the login page, and on a `400` "Cart not found"
+    response (stale/invalid GUID) the cart is discarded and the operation is
+    retried once with a freshly created cart.
   - `auth.ts` — `AuthService`, a singleton that registers users and authenticates
     through the back-end auth API, storing the returned JWT in `sessionStorage`.
 - Shared types and Zod schemas live in `src/types.ts`.

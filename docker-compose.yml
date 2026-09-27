@@ -20,6 +20,7 @@ services:
       - PORT=8000
       - SECRET=SECRET
       - PRODUCT_API_URL=https://fakestoreapi.com/
+      - AUTH_API_URL=http://soft-arq-auth:8001/
       - DB_NAME=cart
       - ENV=$ENV
       - OTEL_SERVICE_NAME=puc-arq-soft-cart

@@ -39,10 +39,17 @@ export const AddItemToCartReturnSchema = z.object({
 
 export type AddItemToCartReturn = z.infer<typeof AddItemToCartReturnSchema>;
 
+export const CartSummaryEntrySchema = z.object({
+  product_id: z.number(),
+  quantity: z.number(),
+});
+
+export type CartSummaryEntry = z.infer<typeof CartSummaryEntrySchema>;
+
 export const CartSummarySchema = z.object({
   guid: z.string().uuid(),
   id: z.number(),
-  items: z.array(CartEntrySchema),
+  items: z.array(CartSummaryEntrySchema),
   total: z.number(),
 });
 
@@ -90,6 +97,15 @@ export const LoginFormSchema = z.object({
 });
 
 export type LoginForm = z.infer<typeof LoginFormSchema>;
+
+export const AddToCartFormSchema = z.object({
+  quantity: z.coerce
+    .number()
+    .int("Quantity must be a whole number.")
+    .min(1, "Quantity must be at least 1."),
+});
+
+export type AddToCartForm = z.infer<typeof AddToCartFormSchema>;
 
 export const ApiErrorSchema = z.object({
   message: z.string(),

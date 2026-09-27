@@ -38,8 +38,20 @@ export function Header() {
     setCartSummary(summary);
   };
 
-  const removeItem = (entryId: number) => async () => {
-    cartApi.removeItem(entryId).then(() => {
+  const removeItem = (productId: number) => async () => {
+    cartApi.removeItem(productId).then(() => {
+      loadSummary();
+    });
+  };
+
+  const incrementItem = (productId: number) => async () => {
+    cartApi.addItem(productId, 1).then(() => {
+      loadSummary();
+    });
+  };
+
+  const decrementItem = (productId: number) => async () => {
+    cartApi.removeItem(productId, 1).then(() => {
       loadSummary();
     });
   };
@@ -61,7 +73,10 @@ export function Header() {
             <details className="overflow-visible">
               <summary className="indicator">
                 <span className="indicator-item badge badge-secondary indicator-bottom indicator-start">
-                  {cartSummary?.items?.length ?? 0}
+                  {cartSummary?.items?.reduce(
+                    (total, item) => total + item.quantity,
+                    0
+                  ) ?? 0}
                 </span>
                 <span className="material-symbols-outlined">shopping_bag</span>
               </summary>
@@ -82,12 +97,12 @@ export function Header() {
                 ) : null}
                 {!isLoading && cartSummary?.items.length ? (
                   (cartSummary?.items ?? []).map((el) => (
-                    <li key={el.id}>
+                    <li key={el.product_id}>
                       <div
-                        className="grid max-w-full overflow-auto"
+                        className="grid max-w-full overflow-auto items-center gap-2"
                         style={{
                           gridTemplate:
-                            "'title price delete' 1fr / 1fr auto auto",
+                            "'title quantity price delete' 1fr / 1fr auto auto auto",
                         }}
                       >
                         <p
@@ -98,15 +113,40 @@ export function Header() {
                         >
                           {products.current.get(el.product_id)?.title ?? ""}
                         </p>
+                        <div className="flex items-center gap-1">
+                          <button
+                            className="btn btn-soft btn-xs"
+                            onClick={decrementItem(el.product_id)}
+                            title="Remove one unit"
+                          >
+                            <span className="material-symbols-outlined">
+                              remove
+                            </span>
+                          </button>
+                          <span className="badge badge-soft badge-secondary">
+                            {el.quantity}
+                          </span>
+                          <button
+                            className="btn btn-soft btn-xs"
+                            onClick={incrementItem(el.product_id)}
+                            title="Add one unit"
+                          >
+                            <span className="material-symbols-outlined">
+                              add
+                            </span>
+                          </button>
+                        </div>
                         <span className="badge badge-soft badge-accent">
                           R$:{" "}
-                          {products.current
-                            .get(el.product_id)
-                            ?.price.toFixed(2) ?? "0.00"}
+                          {(
+                            (products.current.get(el.product_id)?.price ?? 0) *
+                            el.quantity
+                          ).toFixed(2)}
                         </span>
                         <button
                           className="btn btn-error btn-soft btn-xs"
-                          onClick={removeItem(el.id)}
+                          onClick={removeItem(el.product_id)}
+                          title="Remove all units"
                         >
                           <span className="material-symbols-outlined">
                             delete_forever
