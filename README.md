@@ -189,24 +189,29 @@ adjust the values if needed:
 
 ### Docker
 
-It's possible to run the *vite preview* using make (`make run`) or the
-*vite development* server (`make dev`). Preview uses a production build that
-needs to be rebuilt on each new change applied, while development fires up the
-**full stack** — this app, the three back-end APIs (3 replicas each) behind the
-nginx load balancer, one PostgreSQL container per back-end service, the OTEL
-collector and Jaeger —
-through the `docker-compose.yml` at this repository's root, syncing source
-changes into the containers (via `docker-compose --watch`).
+The `Dockerfile` is a multi-stage production build: the first stage builds the
+Vite bundle (`npm run build`) with Node.js, and the second stage serves the
+static `dist/` output with **nginx** (`nginx/frontend.conf`, with the SPA
+`try_files` fallback so react-router owns every path). The `VITE_*` variables
+are baked into the bundle at build time through Docker build args (the `.env`
+file is excluded from the build context).
+
+It's possible to run the production build using make (`make run`) or the
+**full stack** (`make dev`) — this app served by nginx, the three back-end APIs
+(3 replicas each) behind the nginx load balancer, one PostgreSQL container per
+back-end service, the OTEL collector and Jaeger — through the
+`docker-compose.yml` at this repository's root. The compose file passes the
+`VITE_*` build args and publishes the front-end on host port **4173**.
 
 *It's also possible to run without make:*
 
-- **Vite Preview**
+- **Production build (nginx)**
   - `docker build -t arq-soft-front .`
-  - `docker run --rm -p 4173:4173 arq-soft-front`
-  - The container exposes port **4173** for preview.
-- **Full-stack Development**
-  - `docker-compose up --build --watch`
-  - The container exposes port **4173** for development work.
+  - `docker run --rm -p 4173:80 arq-soft-front`
+  - The container serves the static bundle on host port **4173**.
+- **Full stack**
+  - `docker-compose up --build`
+  - The front-end is published on host port **4173**.
 
 > Docker is used through the Podman compatibility layer, with Compose enabled
 > through the standalone `docker-compose` binary.

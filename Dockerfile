@@ -1,24 +1,37 @@
-# Use Node.js LTS version as base image
-FROM node:lts-alpine
+# Stage 1: build the production bundle with Node.js LTS
+FROM node:lts-alpine AS build
 
-# Set working directory
 WORKDIR /app
 
-# Copy package files
-COPY package*.json ./
+# Vite bakes VITE_* variables into the bundle at build time — the .env file
+# is excluded from the build context (.dockerignore), so they come in as
+# build args (the browser calls the APIs, so localhost URLs are correct).
+ARG VITE_FAKE_STORE_API_URL=https://fakestoreapi.com
+ARG VITE_CART_API_URL=http://localhost:8000
+ARG VITE_AUTH_API_URL=http://localhost:8001
+ARG VITE_PAYMENT_API_URL=http://localhost:8002
+ARG VITE_OTEL_EXPORTER_OTLP_ENDPOINT=http://localhost:4318
+ARG VITE_OTEL_SERVICE_NAME=puc-arq-software-front
 
-# Install dependencies
+ENV VITE_FAKE_STORE_API_URL=$VITE_FAKE_STORE_API_URL \
+    VITE_CART_API_URL=$VITE_CART_API_URL \
+    VITE_AUTH_API_URL=$VITE_AUTH_API_URL \
+    VITE_PAYMENT_API_URL=$VITE_PAYMENT_API_URL \
+    VITE_OTEL_EXPORTER_OTLP_ENDPOINT=$VITE_OTEL_EXPORTER_OTLP_ENDPOINT \
+    VITE_OTEL_SERVICE_NAME=$VITE_OTEL_SERVICE_NAME
+
+# Copy package files and install dependencies
+COPY package*.json ./
 RUN npm install
 
-# Copy project files
+# Copy project files and build the production bundle
 COPY . .
-
-# Build the project
 RUN npm run build
 
-# Expose port 5173 (Vite's default port for dev and preview)
-EXPOSE 4173
-EXPOSE 5173
+# Stage 2: serve the static bundle with nginx
+FROM nginx:1.27-alpine
 
-# # Start the application
-CMD ["npm", "run", "preview", "--", "--host"]
+COPY --from=build /app/dist /usr/share/nginx/html
+COPY nginx/frontend.conf /etc/nginx/conf.d/default.conf
+
+EXPOSE 80

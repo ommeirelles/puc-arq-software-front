@@ -10,7 +10,7 @@ build:
 	docker build -t $(imageName) .
 
 run: build
-	docker run --name $(containerName) --rm -p $(exposedPort):$(exposedPort) $(imageName)
+	docker run --name $(containerName) --rm -p $(exposedPort):80 $(imageName)
 
 dev:
 	- docker-compose down --remove-orphans

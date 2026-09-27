@@ -1,13 +1,19 @@
 services:
   soft-arq-front:
-    build: .
+    build:
+      context: .
+      args:
+        # Baked into the Vite bundle at build time (the browser calls the
+        # APIs, so the published localhost URLs are the right values).
+        VITE_FAKE_STORE_API_URL: https://fakestoreapi.com
+        VITE_CART_API_URL: http://localhost:8000
+        VITE_AUTH_API_URL: http://localhost:8001
+        VITE_PAYMENT_API_URL: http://localhost:8002
+        VITE_OTEL_EXPORTER_OTLP_ENDPOINT: http://localhost:4318
+        VITE_OTEL_SERVICE_NAME: puc-arq-software-front
     container_name: arq-soft-front
     ports:
-      - "4173:4173"
-    volumes:
-      - .:/app
-      - /app/node_modules
-    command: npm run dev -- --host
+      - "4173:80"
 
   soft-arq-cart:
     build: ../puc-arq-soft-api/cart
