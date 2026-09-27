@@ -59,7 +59,7 @@ export function Header() {
         <ul className="menu menu-horizontal px-1">
           <li>
             <details>
-              <summary className="indicator">
+              <summary className="indicator overflow-visible">
                 <span className="indicator-item badge badge-secondary indicator-bottom indicator-start">
                   {cartSummary?.items?.length ?? 0}
                 </span>

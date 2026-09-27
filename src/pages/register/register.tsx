@@ -2,11 +2,13 @@ import { AuthService } from "@src/services/auth";
 import { type FormEvent, useState } from "react";
 import { Link, Navigate, useNavigate } from "react-router";
 
-function Login() {
+function Register() {
   const authApi = AuthService.getInstance();
   const navigate = useNavigate();
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [error, setError] = useState<string>();
   const [isLoading, setIsLoading] = useState(false);
 
@@ -17,13 +19,22 @@ function Login() {
   const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError(undefined);
+
+    if (password !== confirmPassword) {
+      setError("Passwords do not match.");
+      return;
+    }
+
     setIsLoading(true);
 
     try {
+      await authApi.register(name, email, password);
       await authApi.login(email, password);
       navigate("/store");
-    } catch {
-      setError("Invalid email or password.");
+    } catch (error) {
+      setError(
+        error instanceof Error ? error.message : "Failed to create account."
+      );
     } finally {
       setIsLoading(false);
     }
@@ -37,7 +48,7 @@ function Login() {
             Fake Store APP
           </h1>
           <p className="text-center text-sm text-base-content/60">
-            Sign in to start shopping
+            Create your account to start shopping
           </p>
 
           {error ? (
@@ -46,6 +57,18 @@ function Login() {
               <span>{error}</span>
             </div>
           ) : null}
+
+          <label className="input w-full">
+            <span className="material-symbols-outlined">person</span>
+            <input
+              type="text"
+              placeholder="Full name"
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+              required
+              autoComplete="name"
+            />
+          </label>
 
           <label className="input w-full">
             <span className="material-symbols-outlined">mail</span>
@@ -67,7 +90,19 @@ function Login() {
               value={password}
               onChange={(event) => setPassword(event.target.value)}
               required
-              autoComplete="current-password"
+              autoComplete="new-password"
+            />
+          </label>
+
+          <label className="input w-full">
+            <span className="material-symbols-outlined">lock</span>
+            <input
+              type="password"
+              placeholder="Confirm password"
+              value={confirmPassword}
+              onChange={(event) => setConfirmPassword(event.target.value)}
+              required
+              autoComplete="new-password"
             />
           </label>
 
@@ -79,13 +114,13 @@ function Login() {
             {isLoading ? (
               <span className="loading loading-spinner loading-sm" />
             ) : null}
-            Sign in
+            Create account
           </button>
 
           <p className="text-center text-xs text-base-content/50">
-            Don't have an account?{" "}
-            <Link to="/register" className="link link-primary">
-              Create one
+            Already have an account?{" "}
+            <Link to="/" className="link link-primary">
+              Sign in
             </Link>
           </p>
         </form>
@@ -94,4 +129,4 @@ function Login() {
   );
 }
 
-export default Login;
+export default Register;

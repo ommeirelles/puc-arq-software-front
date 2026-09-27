@@ -48,7 +48,6 @@ services:
     environment:
       - PORT=8001
       - SECRET=SECRET
-      - FAKE_STORE_API_URL=https://fakestoreapi.com/
       - DB_NAME=auth
       - ENV=$ENV
       - OTEL_SERVICE_NAME=puc-arq-soft-auth

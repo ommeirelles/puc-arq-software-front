@@ -1,5 +1,5 @@
 import { Api } from "./api";
-import { AuthToken, AuthTokenSchema } from "@types";
+import { AuthToken, AuthTokenSchema, User, UserSchema } from "@types";
 
 const globalForServices = globalThis as unknown as {
   authService?: AuthService;
@@ -21,9 +21,9 @@ export class AuthService extends Api {
     return sessionStorage.getItem(this.tokenKey);
   }
 
-  async login(username: string, password: string) {
+  async login(email: string, password: string) {
     const response = await this.post<AuthToken>("login", {
-      body: { username, password },
+      body: { email, password },
       headers: { "Content-Type": "application/json" },
       schemaValidation: AuthTokenSchema,
     });
@@ -36,18 +36,35 @@ export class AuthService extends Api {
     return response.token;
   }
 
-  async logout() {
-    const token = this.getToken();
-
+  async register(name: string, email: string, password: string) {
     try {
-      if (token) {
-        await this.post("logout", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+      const user = await this.post<User>("user", {
+        body: { name, email, password },
+        headers: { "Content-Type": "application/json" },
+        schemaValidation: UserSchema,
+      });
+
+      if (!user) {
+        throw new Error("Failed to register");
       }
-    } finally {
-      this.clearSession();
+
+      return user;
+    } catch (error) {
+      const raw = error instanceof Error ? error.message : "";
+
+      let message = raw || "Failed to register";
+      try {
+        message = (JSON.parse(raw) as { message?: string }).message ?? message;
+      } catch {
+        // not a JSON error body
+      }
+
+      throw new Error(message);
     }
+  }
+
+  async logout() {
+    this.clearSession();
   }
 
   clearSession() {

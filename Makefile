@@ -1,14 +1,24 @@
-imageName = "arq-soft-front"
-exposedPort = 4173
+imageName := arq-soft-front
+containerName := arq-soft-front
+exposedPort := 4173
+
+.PHONY: build run dev down stop
 
 build:
-	- docker stop $(imageName)
-	- docker rm $(imageName)
+	- docker stop $(containerName)
+	- docker rm $(containerName)
 	docker build -t $(imageName) .
 
 run: build
-	docker run --rm -p $(exposedPort):$(exposedPort) $(imageName)
+	docker run --name $(containerName) --rm -p $(exposedPort):$(exposedPort) $(imageName)
 
 dev:
-	- docker compose down --rmi all -v --remove-orphans
-	docker compose up --build --watch
+	- docker-compose down --remove-orphans
+	docker-compose up --build --watch
+
+down:
+	- docker-compose down --remove-orphans
+
+stop:
+	- docker stop $(containerName)
+	- docker rm $(containerName)

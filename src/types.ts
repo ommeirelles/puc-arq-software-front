@@ -53,3 +53,11 @@ export const AuthTokenSchema = z.object({
 });
 
 export type AuthToken = z.infer<typeof AuthTokenSchema>;
+
+export const UserSchema = z.object({
+  id: z.number(),
+  name: z.string(),
+  email: z.string(),
+});
+
+export type User = z.infer<typeof UserSchema>;

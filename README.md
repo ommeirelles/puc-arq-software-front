@@ -3,8 +3,9 @@
 Online shopping single-page application developed for the Software Architecture
 post-graduation course (PUC). It renders the store catalog and manages the shopping
 cart, fetching product data directly from the external
-[Fake Store API](https://fakestoreapi.com/) and delegating cart operations to the
-[back-end cart API](https://github.com/ommeirelles/puc-arq-soft-cart).
+[Fake Store API](https://fakestoreapi.com/), delegating cart operations to the
+back-end cart API and authentication to the back-end auth API — both live in the
+[back-end repository](https://github.com/ommeirelles/puc-arq-soft-cart).
 
 ## Stack
 
@@ -15,20 +16,31 @@ cart, fetching product data directly from the external
 ## Architecture Overview
 
 This app is the front-end of a microservice-based system. It communicates with the
-product service (Fake Store API) for catalog data and with the cart service (the
-Flask back-end) for everything cart-related.
+product service (Fake Store API) for catalog data, with the cart service (the
+Flask back-end) for everything cart-related, and with the auth service (the
+Flask back-end) for user registration and authentication.
 
 ```mermaid
 flowchart LR
     User([User]) --> FE["Front-end SPA<br/>React + Vite · :4173"]
     FE -->|"GET /products"| FSA["Fake Store API<br/>fakestoreapi.com"]
     FE -->|"Cart operations<br/>(create, add, remove, summary)"| BE["Cart API<br/>Flask · :8000"]
+    FE -->|"POST /user · POST /login<br/>GET /user"| AUTH["Auth API<br/>Flask · :8001"]
     BE -->|"Product details & prices"| FSA
     BE --> DB[("SQLite<br/>./db/cart.db")]
+    AUTH --> AUTHDB[("SQLite<br/>./db/auth.db")]
 ```
 
 Key implementation points:
 
+- Routing is handled by `react-router`: the login page is the index route (`/`),
+  user registration lives at `/register`, and the store catalog lives at `/store`,
+  guarded by `RequireAuth`. When no token is present in `sessionStorage` (key
+  `auth_token`), the guard clears the session (token and cart GUID) and redirects
+  to the login page.
+- Authentication is **JWT-based**: the auth API issues a signed token on login,
+  stored in `sessionStorage` under the key `auth_token`. Logout is client-side —
+  the token is simply discarded.
 - The active cart is **session-less**: its GUID is created by the back-end and
   persisted in `localStorage` under the key `cart_guid`.
 - Service layer in `src/services/`:
@@ -38,45 +50,67 @@ Key implementation points:
     Fake Store API and caches them in memory by ID.
   - `cart.ts` — `CartService`, a singleton that creates/retrieves the cart,
     fetches the cart summary, and adds/removes items through the back-end API.
+  - `auth.ts` — `AuthService`, a singleton that registers users and authenticates
+    through the back-end auth API, storing the returned JWT in `sessionStorage`.
 - Shared types and Zod schemas live in `src/types.ts`.
+
+## External API
+
+Product catalog data comes from the [Fake Store API](https://fakestoreapi.com/) —
+a free, public fake API for testing and prototyping e-commerce applications
+([docs](https://fakestoreapi.com/docs)). No registration or API key is required,
+and it is free to use. Only the read-only product routes are consumed:
+
+| Method | Path             | Description          |
+| ------ | ---------------- | -------------------- |
+| `GET`  | `/products`      | List all products.   |
+| `GET`  | `/products/{id}` | Get a single product. |
+
+The data is fetched and rendered by this application itself — the external API is
+never used as a redirect target.
 
 ## Environment Variables
 
 Configuration is done through a `.env` file — copy `.env.example` to `.env` and
 adjust the values if needed:
 
-| Variable                   | Default                     | Purpose                     |
-| -------------------------- | --------------------------- | --------------------------- |
-| `VITE_FAKE_STORE_API_URL`  | `https://fakestoreapi.com`  | Product catalog source      |
-| `VITE_CART_API_URL`        | `http://localhost:8000`     | Back-end cart API base URL  |
+| Variable                          | Default                       | Purpose                                          |
+| --------------------------------- | ----------------------------- | ------------------------------------------------ |
+| `VITE_FAKE_STORE_API_URL`         | `https://fakestoreapi.com`    | Product catalog source                           |
+| `VITE_CART_API_URL`               | `http://localhost:8000`       | Back-end cart API base URL                       |
+| `VITE_AUTH_API_URL`               | `http://localhost:8001`       | Back-end auth API base URL                       |
+| `VITE_OTEL_EXPORTER_OTLP_ENDPOINT`| `http://localhost:4318`       | OTLP HTTP collector endpoint (traces, metrics, logs) |
+| `VITE_OTEL_SERVICE_NAME`          | `puc-arq-software-front`      | Service name reported in telemetry               |
 
 ## Running
 
 ### Docker
 
 It's possible to run the *vite preview* using make (`make run`) or the
-*vite development* server (`make dev`). Development serves the application with
-each change made (via `docker compose --watch`), while preview uses a production
-build that needs to be rebuilt on each new change applied.
+*vite development* server (`make dev`). Preview uses a production build that
+needs to be rebuilt on each new change applied, while development fires up the
+**full stack** — this app, both back-end APIs, the OTEL collector and Jaeger —
+through the `docker-compose.yml` at this repository's root, syncing source
+changes into the containers (via `docker-compose --watch`).
 
 *It's also possible to run without make:*
 
 - **Vite Preview**
-  - `docker build -t puc-arq-soft-front .`
-  - `docker run --rm -p 4173:4173 puc-arq-soft-front`
+  - `docker build -t arq-soft-front .`
+  - `docker run --rm -p 4173:4173 arq-soft-front`
   - The container exposes port **4173** for preview.
-- **Vite Development**
-  - `docker compose up --build --watch`
+- **Full-stack Development**
+  - `docker-compose up --build --watch`
   - The container exposes port **4173** for development work.
 
-> Docker is used through the Podman compatibility layer, with Compose enabled.
+> Docker is used through the Podman compatibility layer, with Compose enabled
+> through the standalone `docker-compose` binary.
 
 ### Locally
 
 Prerequisites:
 
-- Node.js (LTS recommended — 22.x as of today)
-- npm or yarn package manager
+- Node.js **24.x (LTS)** and npm **11.x** — pinned in `engines` (`package.json`)
 
 Steps:
 
