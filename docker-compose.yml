@@ -1,0 +1,94 @@
+services:
+  soft-arq-front:
+    build: .
+    container_name: arq-soft-front
+    ports:
+      - "4173:4173"
+    volumes:
+      - .:/app
+      - /app/node_modules
+    command: npm run dev -- --host
+
+  soft-arq-cart:
+    build: ../puc-arq-soft-api/cart
+    container_name: arq-soft-cart
+    ports:
+      - "8000:8000"
+    networks:
+      - puc-arq-soft
+    environment:
+      - PORT=8000
+      - SECRET=SECRET
+      - PRODUCT_API_URL=https://fakestoreapi.com/
+      - DB_NAME=cart
+      - ENV=$ENV
+      - OTEL_SERVICE_NAME=puc-arq-soft-cart
+      - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+    volumes:
+      - ../puc-arq-soft-api/cart/src:/app/src
+      - ../puc-arq-soft-api/cart/db:/app/db
+    depends_on:
+      - otel-collector
+    develop:
+      watch:
+        - action: sync
+          path: ../puc-arq-soft-api/cart/src
+          target: /app/src
+        - action: rebuild
+          path: ../puc-arq-soft-api/cart/requirements.txt
+
+  soft-arq-auth:
+    build: ../puc-arq-soft-api/auth
+    container_name: arq-soft-auth
+    ports:
+      - "8001:8001"
+    networks:
+      - puc-arq-soft
+    environment:
+      - PORT=8001
+      - SECRET=SECRET
+      - FAKE_STORE_API_URL=https://fakestoreapi.com/
+      - DB_NAME=auth
+      - ENV=$ENV
+      - OTEL_SERVICE_NAME=puc-arq-soft-auth
+      - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+    volumes:
+      - ../puc-arq-soft-api/auth/src:/app/src
+      - ../puc-arq-soft-api/auth/db:/app/db
+    depends_on:
+      - otel-collector
+    develop:
+      watch:
+        - action: sync
+          path: ../puc-arq-soft-api/auth/src
+          target: /app/src
+        - action: rebuild
+          path: ../puc-arq-soft-api/auth/requirements.txt
+
+  otel-collector:
+    container_name: otel-collector
+    image: otel/opentelemetry-collector-contrib:latest
+    command: ["--config=/etc/otelcol-contrib/config.yaml"]
+    volumes:
+      - ./otel-collector-config.yaml:/etc/otelcol-contrib/config.yaml
+    ports:
+      - "4317:4317"
+      - "4318:4318"
+    networks:
+      - puc-arq-soft
+    depends_on:
+      - jaeger
+
+  jaeger:
+    container_name: jaeger
+    image: jaegertracing/jaeger:latest
+    ports:
+      - "16686:16686"
+    networks:
+      - puc-arq-soft
+
+networks:
+  puc-arq-soft:
+    name: puc-arq-soft-net
