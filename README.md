@@ -4,8 +4,11 @@ Online shopping single-page application developed for the Software Architecture
 post-graduation course (PUC). It renders the store catalog and manages the shopping
 cart, fetching product data directly from the external
 [Fake Store API](https://fakestoreapi.com/), delegating cart operations to the
-back-end cart API and authentication to the back-end auth API — both live in the
-[back-end repository](https://github.com/ommeirelles/puc-arq-soft-cart).
+back-end cart API and authentication to the back-end auth API — all back-end
+APIs live in the
+[back-end repository](https://github.com/ommeirelles/puc-arq-soft-cart), which
+also includes the payment API (orchestrated by the compose file but not
+consumed by this app yet).
 
 ## Stack
 
@@ -25,28 +28,38 @@ Flask back-end) for user registration and authentication.
 flowchart LR
     User([User]) --> FE["Front-end SPA<br/>React + Vite · :4173"]
     FE -->|"GET /products"| FSA["Fake Store API<br/>fakestoreapi.com"]
-    FE -->|"Cart operations<br/>(create, add, remove, summary)"| LB["nginx load balancer<br/>:8000 (cart) · :8001 (auth)"]
+    FE -->|"Cart operations<br/>(create, add, remove, summary)"| LB["nginx load balancer<br/>:8000 (cart) · :8001 (auth) · :8002 (payment)"]
     FE -->|"POST /user · POST /login<br/>GET /user"| LB
     LB -->|"round-robin"| BE["Cart API ×3 replicas<br/>Flask · :8000"]
     LB -->|"round-robin"| AUTH["Auth API ×3 replicas<br/>Flask · :8001"]
+    LB -->|"round-robin"| PAY["Payment API ×3 replicas<br/>Flask · :8002"]
     BE -->|"Product details & prices"| FSA
     BE -->|"JWT validation"| AUTH
+    PAY -->|"JWT validation"| AUTH
+    PAY -->|"GET /cart/summary"| BE
+    PAY -->|"CEP lookup"| VIA["ViaCEP API<br/>viacep.com.br"]
     BE --> DB[("PostgreSQL<br/>soft-arq-cart-db · :5432")]
     AUTH --> AUTHDB[("PostgreSQL<br/>soft-arq-auth-db · :5432")]
+    PAY --> PAYDB[("PostgreSQL<br/>soft-arq-payment-db · :5432")]
 ```
+
+> The payment API (`POST /pay/<cart_guid>`) is part of the compose stack but
+> is not consumed by this app yet — payments are triggered directly against
+> the API for now.
 
 > **Design choice — horizontal scaling:** each back-end service runs **3
 > replicas** (`deploy.replicas` in the compose file) behind an **nginx load
 > balancer** (`soft-arq-lb`, config in [`./nginx/nginx.conf`](./nginx/nginx.conf))
 > that round-robins requests across the replicas. The load balancer publishes
 > the same host ports the services used to expose (`8000` for cart, `8001` for
-> auth), so this app needs no configuration change. This works because the
-> services are stateless: sessions are self-signed JWTs and carts are
-> identified by GUID, so any replica can serve any request.
+> auth, `8002` for payment), so this app needs no configuration change. This
+> works because the services are stateless: sessions are self-signed JWTs and
+> carts are identified by GUID, so any replica can serve any request.
 
 > **Design choice — one database per service:** each back-end service owns a
 > dedicated PostgreSQL container (`soft-arq-cart-db` for the cart API,
-> `soft-arq-auth-db` for the auth API), so services can be scaled horizontally
+> `soft-arq-auth-db` for the auth API, `soft-arq-payment-db` for the payment
+> API), so services can be scaled horizontally
 > and independently without sharing a database. The APIs connect through the
 > `DB_URL` environment variable (set by the compose file); when `DB_URL` is not
 > set they fall back to a local SQLite file, which keeps the standalone
@@ -158,7 +171,7 @@ adjust the values if needed:
 It's possible to run the *vite preview* using make (`make run`) or the
 *vite development* server (`make dev`). Preview uses a production build that
 needs to be rebuilt on each new change applied, while development fires up the
-**full stack** — this app, both back-end APIs (3 replicas each) behind the
+**full stack** — this app, the three back-end APIs (3 replicas each) behind the
 nginx load balancer, one PostgreSQL container per back-end service, the OTEL
 collector and Jaeger —
 through the `docker-compose.yml` at this repository's root, syncing source

@@ -69,12 +69,45 @@ services:
         - action: rebuild
           path: ../puc-arq-soft-api/auth/requirements.txt
 
+  soft-arq-payment:
+    build: ../puc-arq-soft-api/payment
+    deploy:
+      replicas: 3
+    networks:
+      - puc-arq-soft
+    environment:
+      - PORT=8002
+      - SECRET=SECRET
+      - CART_API_URL=http://soft-arq-cart:8000/
+      - AUTH_API_URL=http://soft-arq-auth:8001/
+      - VIA_CEP_API_URL=https://viacep.com.br
+      - DB_URL=postgresql+psycopg://payment:payment@soft-arq-payment-db:5432/payment
+      - ENV=$ENV
+      - OTEL_SERVICE_NAME=puc-arq-soft-payment
+      - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+    volumes:
+      - ../puc-arq-soft-api/payment/src:/app/src
+    depends_on:
+      otel-collector:
+        condition: service_started
+      soft-arq-payment-db:
+        condition: service_healthy
+    develop:
+      watch:
+        - action: sync
+          path: ../puc-arq-soft-api/payment/src
+          target: /app/src
+        - action: rebuild
+          path: ../puc-arq-soft-api/payment/requirements.txt
+
   soft-arq-lb:
     container_name: arq-soft-lb
     image: nginx:1.27-alpine
     ports:
       - "8000:8000"
       - "8001:8001"
+      - "8002:8002"
     volumes:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
     networks:
@@ -82,6 +115,7 @@ services:
     depends_on:
       - soft-arq-cart
       - soft-arq-auth
+      - soft-arq-payment
 
   soft-arq-cart-db:
     container_name: arq-soft-cart-db
@@ -117,6 +151,23 @@ services:
       timeout: 3s
       retries: 10
 
+  soft-arq-payment-db:
+    container_name: arq-soft-payment-db
+    image: postgres:16-alpine
+    environment:
+      - POSTGRES_USER=payment
+      - POSTGRES_PASSWORD=payment
+      - POSTGRES_DB=payment
+    volumes:
+      - payment-db-data:/var/lib/postgresql/data
+    networks:
+      - puc-arq-soft
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U payment -d payment"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
   otel-collector:
     container_name: otel-collector
     image: otel/opentelemetry-collector-contrib:latest
@@ -146,3 +197,4 @@ networks:
 volumes:
   cart-db-data:
   auth-db-data:
+  payment-db-data:
