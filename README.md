@@ -6,7 +6,7 @@ cart, fetching product data directly from the external
 [Fake Store API](https://fakestoreapi.com/), delegating cart operations to the
 back-end cart API and authentication to the back-end auth API — all back-end
 APIs live in the
-[back-end repository](https://github.com/ommeirelles/puc-arq-soft-cart), which
+[back-end repository](https://github.com/ommeirelles/puc-arq-soft-api), which
 also includes the payment API that finalizes the purchase at checkout.
 
 ## Stack
