@@ -171,8 +171,9 @@ export function Header() {
         </ul>
       </div>
       <div className="flex-none">
-        <button className="btn btn-ghost btn-square" onClick={logout} title="Logout">
+        <button className="btn btn-neutral" onClick={logout} title="Logout">
           <span className="material-symbols-outlined">logout</span>
+          Logout
         </button>
       </div>
     </div>

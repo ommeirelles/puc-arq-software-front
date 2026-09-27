@@ -4,6 +4,7 @@ interface CategoryFilterProps {
   categories: string[];
   selected: Set<string>;
   onToggle: (category: string) => void;
+  onToggleAll: (selectAll: boolean) => void;
   onClose?: () => void;
 }
 
@@ -11,9 +12,13 @@ export function CategoryFilter({
   categories,
   selected,
   onToggle,
+  onToggleAll,
   onClose,
 }: CategoryFilterProps) {
   const [collapsed, setCollapsed] = useState(false);
+
+  const allSelected =
+    categories.length > 0 && categories.every((c) => selected.has(c));
 
   if (collapsed && !onClose)
     return (
@@ -53,6 +58,12 @@ export function CategoryFilter({
           </button>
         )}
       </div>
+      <button
+        className="btn btn-soft btn-sm btn-secondary w-full mb-2"
+        onClick={() => onToggleAll(!allSelected)}
+      >
+        {allSelected ? "Unselect all" : "Select all"}
+      </button>
       <ul className="flex flex-col gap-1">
         {categories.map((category) => (
           <li key={category}>

@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { ProductService } from "../../services/product";
 import { Product } from "./components/product";
 import { CategoryFilter } from "./components/category-filter";
+import { EmptyState } from "./components/empty-state";
 import { CartService } from "@src/services/cart";
 import { Header } from "@src/components/header";
 import { Loading } from "@src/components/loading";
@@ -54,6 +55,10 @@ function Store() {
     });
   };
 
+  const toggleAllCategories = (selectAll: boolean) => {
+    setSelectedCategories(selectAll ? new Set(categories) : new Set());
+  };
+
   return (
     <div className="index-layout">
       <Header />
@@ -66,10 +71,14 @@ function Store() {
           onChange={(e) => setDrawerOpen(e.target.checked)}
         />
         <div className="drawer-content min-h-0 overflow-auto">
-          <div className="flex gap-8 flex-wrap px-4 py-16 content-start">
-            {visibleProducts?.map((product) => (
-              <Product key={product.id} {...product} />
-            ))}
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-8 px-4 py-16 content-start">
+            {visibleProducts?.length ? (
+              visibleProducts.map((product) => (
+                <Product key={product.id} {...product} />
+              ))
+            ) : (
+              <EmptyState />
+            )}
           </div>
           {!drawerOpen && (
             <button
@@ -91,6 +100,7 @@ function Store() {
               categories={categories}
               selected={selectedCategories}
               onToggle={toggleCategory}
+              onToggleAll={toggleAllCategories}
               onClose={() => setDrawerOpen(false)}
             />
           </div>
@@ -99,6 +109,7 @@ function Store() {
               categories={categories}
               selected={selectedCategories}
               onToggle={toggleCategory}
+              onToggleAll={toggleAllCategories}
             />
           </div>
         </div>

@@ -46,11 +46,20 @@ Key implementation points:
   persisted in `localStorage` under the key `cart_guid`.
 - The store catalog can be filtered by category through a side panel
   (`src/pages/store/components/category-filter.tsx`): each category is a checkbox
-  that includes/removes its products from the listing. Filtering happens entirely
-  on the front-end — no extra requests are made. The panel is responsive: on
+  that includes/removes its products from the listing, plus a button to
+  select/unselect all categories at once. Filtering happens entirely
+  on the front-end — no extra requests are made. When no products are left to
+  display (e.g., all categories unselected), an empty state
+  (`src/pages/store/components/empty-state.tsx`) informs that no products are
+  available. The panel is responsive: on
   desktop (`lg` and up) it renders side by side with the product grid and can be
   collapsed to a slim strip; on smaller screens it becomes an overlay drawer
   opened from a floating filter button (daisyUI `drawer` with `lg:drawer-open`).
+- The product listing is a fluid CSS grid
+  (`grid-cols-[repeat(auto-fill,minmax(220px,1fr))]`): cards have a 220px minimum
+  width (in line with common e-commerce grids like Amazon, Mercado Livre and
+  Best Buy), stretch evenly to fill the row, and the grid adds a column whenever
+  another minimum-width card fits — 4 columns at 1440px, 3 at 820px.
 - Service layer in `src/services/`:
   - `api.ts` — abstract HTTP client (`get`/`post`/`put`/`patch`/`delete`) with
     optional Zod response validation.

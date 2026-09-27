@@ -22,7 +22,7 @@ export function Product(product: Product) {
   };
 
   return (
-    <div className="card bg-base-100 w-96 shadow-sm items-center pt-8">
+    <div className="card bg-base-100 w-full shadow-sm items-center pt-8">
       <figure className="flex h-64 max-h-64">
         <img
           className="h-full"
