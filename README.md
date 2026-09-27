@@ -4,7 +4,7 @@ Online shopping single-page application developed for the Software Architecture
 post-graduation course (PUC). It renders the store catalog and manages the shopping
 cart, fetching product data directly from the external
 [Fake Store API](https://fakestoreapi.com/) and delegating cart operations to the
-[back-end cart API](../puc-arq-soft-cart).
+[back-end cart API](https://github.com/ommeirelles/puc-arq-soft-cart).
 
 ## Stack
 
