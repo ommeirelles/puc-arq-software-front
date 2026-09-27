@@ -1,5 +1,12 @@
 import { Api } from "./api";
-import { AuthToken, AuthTokenSchema, User, UserSchema } from "@types";
+import {
+  ApiErrorSchema,
+  AuthToken,
+  AuthTokenSchema,
+  User,
+  UserSchema,
+  ValidationErrorsSchema,
+} from "@types";
 
 const globalForServices = globalThis as unknown as {
   authService?: AuthService;
@@ -54,7 +61,23 @@ export class AuthService extends Api {
 
       let message = raw || "Failed to register";
       try {
-        message = (JSON.parse(raw) as { message?: string }).message ?? message;
+        const parsed: unknown = JSON.parse(raw);
+
+        const validationErrors = ValidationErrorsSchema.safeParse(parsed);
+        const apiError = ApiErrorSchema.safeParse(parsed);
+
+        if (validationErrors.success) {
+          // validation errors returned by the API (HTTP 422)
+          message =
+            validationErrors.data
+              .map((detail) => {
+                const field = detail.loc[detail.loc.length - 1];
+                return field ? `${field}: ${detail.msg}` : detail.msg;
+              })
+              .join("; ") || message;
+        } else if (apiError.success) {
+          message = apiError.data.message;
+        }
       } catch {
         // not a JSON error body
       }

@@ -11,7 +11,8 @@ back-end cart API and authentication to the back-end auth API — both live in t
 
 - **React 19** + **TypeScript** + **Vite 6**
 - **Tailwind CSS 4** + **daisyUI** for styling
-- **Zod** for runtime response validation
+- **Zod** for runtime schema validation (API responses and forms)
+- **React Hook Form** (with `@hookform/resolvers`) for form state and validation
 
 ## Architecture Overview
 

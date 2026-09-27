@@ -61,3 +61,43 @@ export const UserSchema = z.object({
 });
 
 export type User = z.infer<typeof UserSchema>;
+
+export const RegisterFormSchema = z
+  .object({
+    name: z.string().trim().min(1, "Name is required."),
+    email: z
+      .string()
+      .trim()
+      .min(1, "Email is required.")
+      .email("Enter a valid email address."),
+    password: z.string().min(1, "Password is required."),
+    confirmPassword: z.string(),
+  })
+  .refine((data) => data.confirmPassword === data.password, {
+    message: "Passwords do not match.",
+    path: ["confirmPassword"],
+  });
+
+export type RegisterForm = z.infer<typeof RegisterFormSchema>;
+
+export const LoginFormSchema = z.object({
+  email: z
+    .string()
+    .trim()
+    .min(1, "Email is required.")
+    .email("Enter a valid email address."),
+  password: z.string().min(1, "Password is required."),
+});
+
+export type LoginForm = z.infer<typeof LoginFormSchema>;
+
+export const ApiErrorSchema = z.object({
+  message: z.string(),
+});
+
+export const ValidationErrorsSchema = z.array(
+  z.object({
+    loc: z.array(z.union([z.string(), z.number()])),
+    msg: z.string(),
+  })
+);

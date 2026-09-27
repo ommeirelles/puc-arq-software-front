@@ -58,8 +58,8 @@ export function Header() {
       <div className="flex flex-1 justify-center">
         <ul className="menu menu-horizontal px-1">
           <li>
-            <details>
-              <summary className="indicator overflow-visible">
+            <details className="overflow-visible">
+              <summary className="indicator">
                 <span className="indicator-item badge badge-secondary indicator-bottom indicator-start">
                   {cartSummary?.items?.length ?? 0}
                 </span>

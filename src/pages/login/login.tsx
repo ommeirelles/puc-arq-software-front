@@ -1,38 +1,42 @@
 import { AuthService } from "@src/services/auth";
-import { type FormEvent, useState } from "react";
+import { LoginForm, LoginFormSchema } from "@types";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import { Link, Navigate, useNavigate } from "react-router";
 
 function Login() {
   const authApi = AuthService.getInstance();
   const navigate = useNavigate();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState<string>();
-  const [isLoading, setIsLoading] = useState(false);
+  const {
+    register,
+    handleSubmit,
+    setError,
+    formState: { errors, isSubmitting },
+  } = useForm<LoginForm>({
+    resolver: zodResolver(LoginFormSchema),
+  });
 
   if (authApi.getToken()) {
     return <Navigate to="/store" replace />;
   }
 
-  const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setError(undefined);
-    setIsLoading(true);
-
+  const onSubmit = async (data: LoginForm) => {
     try {
-      await authApi.login(email, password);
+      await authApi.login(data.email, data.password);
       navigate("/store");
     } catch {
-      setError("Invalid email or password.");
-    } finally {
-      setIsLoading(false);
+      setError("root", { message: "Invalid email or password." });
     }
   };
 
   return (
     <div className="w-full h-full flex items-center justify-center bg-base-200">
       <div className="card w-full max-w-sm bg-base-100 shadow-xl">
-        <form className="card-body gap-4" onSubmit={onSubmit}>
+        <form
+          className="card-body gap-4"
+          onSubmit={handleSubmit(onSubmit)}
+          noValidate
+        >
           <h1 className="card-title justify-center text-2xl">
             Fake Store APP
           </h1>
@@ -40,43 +44,57 @@ function Login() {
             Sign in to start shopping
           </p>
 
-          {error ? (
+          {errors.root ? (
             <div role="alert" className="alert alert-error alert-soft">
               <span className="material-symbols-outlined">error</span>
-              <span>{error}</span>
+              <span>{errors.root.message}</span>
             </div>
           ) : null}
 
-          <label className="input w-full">
-            <span className="material-symbols-outlined">mail</span>
-            <input
-              type="email"
-              placeholder="Email"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              required
-              autoComplete="email"
-            />
-          </label>
+          <div>
+            <label
+              className={`input w-full${errors.email ? " input-error" : ""}`}
+            >
+              <span className="material-symbols-outlined">mail</span>
+              <input
+                type="email"
+                placeholder="Email"
+                aria-invalid={Boolean(errors.email)}
+                autoComplete="email"
+                {...register("email")}
+              />
+            </label>
+            {errors.email ? (
+              <p className="text-error text-xs mt-1">{errors.email.message}</p>
+            ) : null}
+          </div>
 
-          <label className="input w-full">
-            <span className="material-symbols-outlined">lock</span>
-            <input
-              type="password"
-              placeholder="Password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              required
-              autoComplete="current-password"
-            />
-          </label>
+          <div>
+            <label
+              className={`input w-full${errors.password ? " input-error" : ""}`}
+            >
+              <span className="material-symbols-outlined">lock</span>
+              <input
+                type="password"
+                placeholder="Password"
+                aria-invalid={Boolean(errors.password)}
+                autoComplete="current-password"
+                {...register("password")}
+              />
+            </label>
+            {errors.password ? (
+              <p className="text-error text-xs mt-1">
+                {errors.password.message}
+              </p>
+            ) : null}
+          </div>
 
           <button
             type="submit"
             className="btn btn-primary w-full"
-            disabled={isLoading}
+            disabled={isSubmitting}
           >
-            {isLoading ? (
+            {isSubmitting ? (
               <span className="loading loading-spinner loading-sm" />
             ) : null}
             Sign in
