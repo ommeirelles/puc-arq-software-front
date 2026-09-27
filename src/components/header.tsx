@@ -6,7 +6,13 @@ import { Loading } from "./loading";
 import { ProductService } from "@src/services/product";
 import { Product } from "@types";
 
-export function Header() {
+export function Header({
+  search,
+  onSearch,
+}: {
+  search: string;
+  onSearch: (value: string) => void;
+}) {
   const cartApi = CartService.getInstance();
   const authApi = AuthService.getInstance();
   const prodApi = ProductService.getInstance();
@@ -63,11 +69,19 @@ export function Header() {
   };
 
   return (
-    <div className="navbar bg-base-100 shadow-sm">
-      <div className="flex-none">
+    <div className="navbar bg-base-100 shadow-sm flex-wrap">
+      <div className="flex w-full justify-center lg:w-auto lg:flex-none">
         <a className="btn btn-ghost text-xl">Fake Store APP</a>
       </div>
-      <div className="flex flex-1 justify-center">
+      <div className="flex flex-1 justify-center items-center gap-2 px-2">
+        <input
+          type="search"
+          className="input input-bordered w-full max-w-xs"
+          placeholder="Search products..."
+          aria-label="Search products"
+          value={search}
+          onChange={(e) => onSearch(e.target.value)}
+        />
         <ul className="menu menu-horizontal px-1">
           <li>
             <details className="overflow-visible">
@@ -80,7 +94,7 @@ export function Header() {
                 </span>
                 <span className="material-symbols-outlined">shopping_bag</span>
               </summary>
-              <ul className="bg-base-100 rounded-t-none p-2 w-md mr-0 z-10 shadow-md shadow-gray-700 left-[-224px]">
+              <ul className="bg-neutral text-neutral-content rounded-t-none p-2 mr-0 z-10 border border-base-content/20 shadow-lg shadow-base-content/30 max-lg:fixed max-lg:inset-x-4 max-lg:top-28 max-lg:rounded-box lg:w-md lg:left-[-224px]">
                 <li>
                   <div className="flex justify-center items-center cursor-default">
                     <div className="badge badge-soft badge-secondary">
@@ -99,59 +113,83 @@ export function Header() {
                   (cartSummary?.items ?? []).map((el) => (
                     <li key={el.product_id}>
                       <div
-                        className="grid max-w-full overflow-auto items-center gap-2"
+                        className="grid max-w-full items-center gap-x-2 gap-y-1"
                         style={{
                           gridTemplate:
-                            "'title quantity price delete' 1fr / 1fr auto auto auto",
+                            "'prod-img actions' auto 'prod-img prod-name' auto / auto 1fr",
                         }}
                       >
+                        {products.current.get(el.product_id)?.image ? (
+                          <img
+                            className="size-12 rounded bg-white object-contain"
+                            style={{ gridArea: "prod-img" }}
+                            src={products.current.get(el.product_id)?.image}
+                            alt={
+                              products.current.get(el.product_id)?.title ?? ""
+                            }
+                            loading="lazy"
+                          />
+                        ) : (
+                          <span
+                            className="material-symbols-outlined size-12 flex items-center justify-center text-base-content/40"
+                            style={{ gridArea: "prod-img" }}
+                          >
+                            image
+                          </span>
+                        )}
+                        <div
+                          className="flex items-center justify-end gap-2"
+                          style={{ gridArea: "actions" }}
+                        >
+                          <div className="flex items-center gap-1">
+                            <button
+                              className="btn btn-soft btn-xs"
+                              onClick={decrementItem(el.product_id)}
+                              title="Remove one unit"
+                            >
+                              <span className="material-symbols-outlined">
+                                remove
+                              </span>
+                            </button>
+                            <span className="badge badge-soft badge-secondary">
+                              {el.quantity}
+                            </span>
+                            <button
+                              className="btn btn-soft btn-xs"
+                              onClick={incrementItem(el.product_id)}
+                              title="Add one unit"
+                            >
+                              <span className="material-symbols-outlined">
+                                add
+                              </span>
+                            </button>
+                          </div>
+                          <span className="badge badge-soft badge-accent">
+                            R$:{" "}
+                            {(
+                              (products.current.get(el.product_id)?.price ??
+                                0) * el.quantity
+                            ).toFixed(2)}
+                          </span>
+                          <button
+                            className="btn btn-error btn-soft btn-xs"
+                            onClick={removeItem(el.product_id)}
+                            title="Remove all units"
+                          >
+                            <span className="material-symbols-outlined">
+                              delete_forever
+                            </span>
+                          </button>
+                        </div>
                         <p
-                          className="overflow-hidden text-ellipsis whitespace-nowrap"
+                          className="min-w-0 overflow-hidden text-ellipsis whitespace-nowrap"
+                          style={{ gridArea: "prod-name" }}
                           title={
                             products.current.get(el.product_id)?.title ?? ""
                           }
                         >
                           {products.current.get(el.product_id)?.title ?? ""}
                         </p>
-                        <div className="flex items-center gap-1">
-                          <button
-                            className="btn btn-soft btn-xs"
-                            onClick={decrementItem(el.product_id)}
-                            title="Remove one unit"
-                          >
-                            <span className="material-symbols-outlined">
-                              remove
-                            </span>
-                          </button>
-                          <span className="badge badge-soft badge-secondary">
-                            {el.quantity}
-                          </span>
-                          <button
-                            className="btn btn-soft btn-xs"
-                            onClick={incrementItem(el.product_id)}
-                            title="Add one unit"
-                          >
-                            <span className="material-symbols-outlined">
-                              add
-                            </span>
-                          </button>
-                        </div>
-                        <span className="badge badge-soft badge-accent">
-                          R$:{" "}
-                          {(
-                            (products.current.get(el.product_id)?.price ?? 0) *
-                            el.quantity
-                          ).toFixed(2)}
-                        </span>
-                        <button
-                          className="btn btn-error btn-soft btn-xs"
-                          onClick={removeItem(el.product_id)}
-                          title="Remove all units"
-                        >
-                          <span className="material-symbols-outlined">
-                            delete_forever
-                          </span>
-                        </button>
                       </div>
                     </li>
                   ))
@@ -170,7 +208,7 @@ export function Header() {
           </li>
         </ul>
       </div>
-      <div className="flex-none">
+      <div className="flex-none hidden lg:block">
         <button className="btn btn-neutral" onClick={logout} title="Logout">
           <span className="material-symbols-outlined">logout</span>
           Logout

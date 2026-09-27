@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ProductService } from "../../services/product";
 import { Product } from "./components/product";
 import { CategoryFilter } from "./components/category-filter";
@@ -6,6 +6,7 @@ import { EmptyState } from "./components/empty-state";
 import { CartService } from "@src/services/cart";
 import { Header } from "@src/components/header";
 import { Loading } from "@src/components/loading";
+import { MobileDock } from "@src/components/mobile-dock";
 
 import "./index.css";
 
@@ -19,6 +20,8 @@ function Store() {
     new Set()
   );
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const contentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     Promise.all([cartApi.getCart(), prodApi.products()]).then(
@@ -42,9 +45,26 @@ function Store() {
   const categories = [
     ...new Set((products ?? []).map((product) => product.category)),
   ];
-  const visibleProducts = products?.filter((product) =>
+  const categoryFiltered = products?.filter((product) =>
     selectedCategories.has(product.category)
   );
+
+  const query = search.trim().toLowerCase();
+  let visibleProducts = categoryFiltered;
+  if (query) {
+    const textMatches = categoryFiltered?.filter(
+      (product) =>
+        (product.title ?? "").toLowerCase().includes(query) ||
+        (product.description ?? "").toLowerCase().includes(query)
+    );
+    visibleProducts = textMatches?.length
+      ? textMatches
+      : categoryFiltered?.filter(
+          (product) =>
+            product.image.toLowerCase().includes(query) ||
+            product.category.toLowerCase().includes(query)
+        );
+  }
 
   const toggleCategory = (category: string) => {
     setSelectedCategories((prev) => {
@@ -61,7 +81,7 @@ function Store() {
 
   return (
     <div className="index-layout">
-      <Header />
+      <Header search={search} onSearch={setSearch} />
       <div className="drawer lg:drawer-open min-h-0 h-full">
         <input
           id="category-drawer"
@@ -70,8 +90,8 @@ function Store() {
           checked={drawerOpen}
           onChange={(e) => setDrawerOpen(e.target.checked)}
         />
-        <div className="drawer-content min-h-0 overflow-auto">
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-8 px-4 py-16 content-start">
+        <div className="drawer-content min-h-0 overflow-auto" ref={contentRef}>
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(220px,1fr))] gap-8 px-4 pt-16 pb-28 lg:pb-16 content-start">
             {visibleProducts?.length ? (
               visibleProducts.map((product) => (
                 <Product key={product.id} {...product} />
@@ -80,15 +100,6 @@ function Store() {
               <EmptyState />
             )}
           </div>
-          {!drawerOpen && (
-            <button
-              className="btn btn-secondary btn-circle fixed bottom-6 right-6 z-20 shadow-lg lg:hidden"
-              onClick={() => setDrawerOpen(true)}
-              title="Filter by category"
-            >
-              <span className="material-symbols-outlined">filter_list</span>
-            </button>
-          )}
         </div>
         <div className="drawer-side min-h-0 h-full">
           <div
@@ -114,6 +125,12 @@ function Store() {
           </div>
         </div>
       </div>
+      <MobileDock
+        onOpenFilters={() => setDrawerOpen(true)}
+        onScrollToTop={() =>
+          contentRef.current?.scrollTo({ top: 0, behavior: "smooth" })
+        }
+      />
     </div>
   );
 }

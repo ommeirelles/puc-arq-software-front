@@ -44,6 +44,15 @@ Key implementation points:
   the token is simply discarded.
 - The active cart is **session-less**: its GUID is created by the back-end and
   persisted in `localStorage` under the key `cart_guid`.
+- The header includes a search input (before the cart basket) that filters the
+  product listing as you type: the text is matched case-insensitively against
+  the product title and description first; only when that yields no results does
+  it fall back to matching the image URL and category. On mobile the header
+  stacks in two rows: the Fake Store APP logo centered on top, and the search
+  input plus cart basket below (the logout button is hidden — logout lives in
+  the mobile dock), and the cart dropdown adapts to the viewport width. Product
+  images use native lazy loading (`loading="lazy"`) so they only load when they
+  enter the viewport.
 - The store catalog can be filtered by category through a side panel
   (`src/pages/store/components/category-filter.tsx`): each category is a checkbox
   that includes/removes its products from the listing, plus a button to
@@ -54,7 +63,11 @@ Key implementation points:
   available. The panel is responsive: on
   desktop (`lg` and up) it renders side by side with the product grid and can be
   collapsed to a slim strip; on smaller screens it becomes an overlay drawer
-  opened from a floating filter button (daisyUI `drawer` with `lg:drawer-open`).
+  opened from the mobile dock (daisyUI `drawer` with `lg:drawer-open`).
+- On mobile, a daisyUI `dock` (`src/components/mobile-dock.tsx`, hidden at `lg`
+  and up) sticks to the bottom of the store page with three actions: **Logout**,
+  **Top** (smooth-scrolls the product grid to the top) and **Filters** (opens the
+  category drawer).
 - The product listing is a fluid CSS grid
   (`grid-cols-[repeat(auto-fill,minmax(220px,1fr))]`): cards have a 220px minimum
   width (in line with common e-commerce grids like Amazon, Mercado Livre and
