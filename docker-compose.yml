@@ -21,16 +21,18 @@ services:
       - SECRET=SECRET
       - PRODUCT_API_URL=https://fakestoreapi.com/
       - AUTH_API_URL=http://soft-arq-auth:8001/
-      - DB_NAME=cart
+      - DB_URL=postgresql+psycopg://cart:cart@soft-arq-cart-db:5432/cart
       - ENV=$ENV
       - OTEL_SERVICE_NAME=puc-arq-soft-cart
       - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
     volumes:
       - ../puc-arq-soft-api/cart/src:/app/src
-      - ../puc-arq-soft-api/cart/db:/app/db
     depends_on:
-      - otel-collector
+      otel-collector:
+        condition: service_started
+      soft-arq-cart-db:
+        condition: service_healthy
     develop:
       watch:
         - action: sync
@@ -49,16 +51,18 @@ services:
     environment:
       - PORT=8001
       - SECRET=SECRET
-      - DB_NAME=auth
+      - DB_URL=postgresql+psycopg://auth:auth@soft-arq-auth-db:5432/auth
       - ENV=$ENV
       - OTEL_SERVICE_NAME=puc-arq-soft-auth
       - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
     volumes:
       - ../puc-arq-soft-api/auth/src:/app/src
-      - ../puc-arq-soft-api/auth/db:/app/db
     depends_on:
-      - otel-collector
+      otel-collector:
+        condition: service_started
+      soft-arq-auth-db:
+        condition: service_healthy
     develop:
       watch:
         - action: sync
@@ -66,6 +70,40 @@ services:
           target: /app/src
         - action: rebuild
           path: ../puc-arq-soft-api/auth/requirements.txt
+
+  soft-arq-cart-db:
+    container_name: arq-soft-cart-db
+    image: postgres:16-alpine
+    environment:
+      - POSTGRES_USER=cart
+      - POSTGRES_PASSWORD=cart
+      - POSTGRES_DB=cart
+    volumes:
+      - cart-db-data:/var/lib/postgresql/data
+    networks:
+      - puc-arq-soft
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cart -d cart"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  soft-arq-auth-db:
+    container_name: arq-soft-auth-db
+    image: postgres:16-alpine
+    environment:
+      - POSTGRES_USER=auth
+      - POSTGRES_PASSWORD=auth
+      - POSTGRES_DB=auth
+    volumes:
+      - auth-db-data:/var/lib/postgresql/data
+    networks:
+      - puc-arq-soft
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U auth -d auth"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
 
   otel-collector:
     container_name: otel-collector
@@ -92,3 +130,7 @@ services:
 networks:
   puc-arq-soft:
     name: puc-arq-soft-net
+
+volumes:
+  cart-db-data:
+  auth-db-data:

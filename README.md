@@ -28,9 +28,17 @@ flowchart LR
     FE -->|"Cart operations<br/>(create, add, remove, summary)"| BE["Cart API<br/>Flask · :8000"]
     FE -->|"POST /user · POST /login<br/>GET /user"| AUTH["Auth API<br/>Flask · :8001"]
     BE -->|"Product details & prices"| FSA
-    BE --> DB[("SQLite<br/>./db/cart.db")]
-    AUTH --> AUTHDB[("SQLite<br/>./db/auth.db")]
+    BE --> DB[("PostgreSQL<br/>soft-arq-cart-db · :5432")]
+    AUTH --> AUTHDB[("PostgreSQL<br/>soft-arq-auth-db · :5432")]
 ```
+
+> **Design choice — one database per service:** each back-end service owns a
+> dedicated PostgreSQL container (`soft-arq-cart-db` for the cart API,
+> `soft-arq-auth-db` for the auth API), so services can be scaled horizontally
+> and independently without sharing a database. The APIs connect through the
+> `DB_URL` environment variable (set by the compose file); when `DB_URL` is not
+> set they fall back to a local SQLite file, which keeps the standalone
+> `make run` / `make dev` flows working without extra infrastructure.
 
 Key implementation points:
 
@@ -124,7 +132,8 @@ adjust the values if needed:
 It's possible to run the *vite preview* using make (`make run`) or the
 *vite development* server (`make dev`). Preview uses a production build that
 needs to be rebuilt on each new change applied, while development fires up the
-**full stack** — this app, both back-end APIs, the OTEL collector and Jaeger —
+**full stack** — this app, both back-end APIs, one PostgreSQL container per
+back-end service, the OTEL collector and Jaeger —
 through the `docker-compose.yml` at this repository's root, syncing source
 changes into the containers (via `docker-compose --watch`).
 
