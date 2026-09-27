@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useSearchParams } from "react-router";
 import { ProductService } from "../../services/product";
 import { Product } from "./components/product";
 import { CategoryFilter } from "./components/category-filter";
@@ -13,6 +14,7 @@ import "./index.css";
 function Store() {
   const prodApi = ProductService.getInstance();
   const cartApi = CartService.getInstance();
+  const [searchParams] = useSearchParams();
   const [cartGuid, setCartGuid] = useState<string>();
   const [products, setProducts] =
     useState<Awaited<ReturnType<typeof prodApi.products>>>();
@@ -24,12 +26,16 @@ function Store() {
   const contentRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    const categoryParam = searchParams.get("category");
     Promise.all([cartApi.getCart(), prodApi.products()]).then(
       ([guid, prods]) => {
         setCartGuid(guid);
         setProducts(prods);
+        const allCategories = (prods ?? []).map((product) => product.category);
         setSelectedCategories(
-          new Set((prods ?? []).map((product) => product.category))
+          categoryParam && allCategories.includes(categoryParam)
+            ? new Set([categoryParam])
+            : new Set(allCategories)
         );
       }
     );

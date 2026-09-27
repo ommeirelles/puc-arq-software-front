@@ -1,7 +1,7 @@
 import { CartService } from "@src/services/cart";
 import { AuthService } from "@src/services/auth";
 import { useEffect, useRef, useState } from "react";
-import { useNavigate } from "react-router";
+import { Link, useNavigate } from "react-router";
 import { Loading } from "./loading";
 import { ProductService } from "@src/services/product";
 import { Product } from "@types";
@@ -10,8 +10,8 @@ export function Header({
   search,
   onSearch,
 }: {
-  search: string;
-  onSearch: (value: string) => void;
+  search?: string;
+  onSearch?: (value: string) => void;
 }) {
   const cartApi = CartService.getInstance();
   const authApi = AuthService.getInstance();
@@ -23,17 +23,24 @@ export function Header({
   const products = useRef<Map<number, Product>>(new Map());
 
   useEffect(() => {
+    const onCartUpdated = () => loadSummary();
     loadSummary();
-    document.addEventListener("cart-updated", () => loadSummary());
+    document.addEventListener("cart-updated", onCartUpdated);
 
-    return () =>
-      document.removeEventListener("cart-updated", () => loadSummary());
+    return () => document.removeEventListener("cart-updated", onCartUpdated);
   }, []);
 
   const loadSummary = async () => {
     setIsLoading(true);
     const summary = await cartApi.getSummary();
-    for (const item of summary?.items ?? []) {
+    if (!summary) {
+      // superseded by a newer summary request or failed; keep the
+      // current state and let the latest request update it
+      setIsLoading(false);
+      return;
+    }
+
+    for (const item of summary.items) {
       const product = await prodApi.productById(item.product_id);
       if (!product) continue;
 
@@ -71,17 +78,21 @@ export function Header({
   return (
     <div className="navbar bg-base-100 shadow-sm flex-wrap">
       <div className="flex w-full justify-center lg:w-auto lg:flex-none">
-        <a className="btn btn-ghost text-xl">Fake Store APP</a>
+        <Link to="/store" className="btn btn-ghost text-xl">
+          Fake Store APP
+        </Link>
       </div>
       <div className="flex flex-1 justify-center items-center gap-2 px-2">
-        <input
-          type="search"
-          className="input input-bordered w-full max-w-xs"
-          placeholder="Search products..."
-          aria-label="Search products"
-          value={search}
-          onChange={(e) => onSearch(e.target.value)}
-        />
+        {onSearch ? (
+          <input
+            type="search"
+            className="input input-bordered w-full max-w-xs"
+            placeholder="Search products..."
+            aria-label="Search products"
+            value={search ?? ""}
+            onChange={(e) => onSearch(e.target.value)}
+          />
+        ) : null}
         <ul className="menu menu-horizontal px-1">
           <li>
             <details className="overflow-visible">

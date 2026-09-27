@@ -99,8 +99,8 @@ export class CartService extends Api {
     if (this.getSummaryAbortController) {
       this.getSummaryAbortController.abort();
     }
-    this.getSummaryAbortController = new AbortController();
-    const { signal } = this.getSummaryAbortController;
+    const controller = new AbortController();
+    this.getSummaryAbortController = controller;
 
     try {
       const summary = await this.withCartRecovery(async () =>
@@ -111,14 +111,17 @@ export class CartService extends Api {
           {
             headers: this.authHeaders(),
             schemaValidation: CartSummarySchema,
-            signal,
+            signal: controller.signal,
           }
         )
       );
-      this.getSummaryAbortController = undefined;
+      if (this.getSummaryAbortController === controller) {
+        this.getSummaryAbortController = undefined;
+      }
 
       return summary;
     } catch (error) {
+      if (controller.signal.aborted) return;
       console.error(error);
     }
   }

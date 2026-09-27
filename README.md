@@ -55,10 +55,24 @@ flowchart LR
 Key implementation points:
 
 - Routing is handled by `react-router`: the login page is the index route (`/`),
-  user registration lives at `/register`, and the store catalog lives at `/store`,
-  guarded by `RequireAuth`. When no token is present in `sessionStorage` (key
+  user registration lives at `/register`, the store catalog lives at `/store`,
+  and the product details page lives at `/store/product/:id` — both guarded by
+  `RequireAuth`. When no token is present in `sessionStorage` (key
   `auth_token`), the guard clears the session (token and cart GUID) and redirects
   to the login page.
+- Clicking a product card in the catalog (image, text, or title link) navigates
+  to the product details page (`src/pages/product/index.tsx`), which fetches
+  the product from `GET /products/{id}` and displays all of its information:
+  image, title, category, id, rating (read-only star rating plus rate and
+  review count), full description and price, alongside the same quantity +
+  "Buy Now" add-to-cart form used in the catalog cards. The page shows a
+  skeleton while loading and a "Product not found" state (with a link back to
+  the store) when the product does not exist. The breadcrumbs link back to the
+  catalog: `Store` goes to `/store`, and the category goes to
+  `/store?category=<name>`, which opens the catalog with only that category
+  selected in the filter panel. The header is reused without the
+  search input (which only filters the catalog listing), and the logo links
+  back to `/store`.
 - Authentication is **JWT-based**: the auth API issues a signed token on login,
   stored in `sessionStorage` under the key `auth_token`. Logout is client-side —
   the token is simply discarded.

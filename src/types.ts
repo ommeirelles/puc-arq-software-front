@@ -1,5 +1,10 @@
 import * as z from "zod";
 
+export const ProductRatingSchema = z.object({
+  rate: z.number(),
+  count: z.number(),
+});
+
 export const ProductSchema = z.object({
   id: z.number(),
   price: z.number().gt(0),
@@ -7,6 +12,7 @@ export const ProductSchema = z.object({
   description: z.string().nullish(),
   category: z.string(),
   image: z.string(),
+  rating: ProductRatingSchema.nullish(),
 });
 
 export type Product = z.infer<typeof ProductSchema>;

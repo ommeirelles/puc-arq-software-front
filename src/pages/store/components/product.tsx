@@ -1,10 +1,13 @@
 import { CartService } from "@src/services/cart";
 import { AddToCartForm, AddToCartFormSchema, type Product } from "@types";
+import type { MouseEvent } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Link, useNavigate } from "react-router";
 
 export function Product(product: Product) {
   const cartAPI = CartService.getInstance();
+  const navigate = useNavigate();
   const {
     register,
     handleSubmit,
@@ -21,8 +24,16 @@ export function Product(product: Product) {
     document.dispatchEvent(new Event("cart-updated"));
   };
 
+  const openDetails = (event: MouseEvent<HTMLDivElement>) => {
+    if ((event.target as HTMLElement).closest("form, a")) return;
+    navigate(`/store/product/${product.id}`);
+  };
+
   return (
-    <div className="card card-border bg-base-100 w-full h-full shadow-md transition-shadow hover:shadow-xl">
+    <div
+      className="card card-border bg-base-100 w-full h-full shadow-md transition-shadow hover:shadow-xl cursor-pointer"
+      onClick={openDetails}
+    >
       <figure className="h-48 bg-white">
         <img
           className="h-full w-full object-contain p-4"
@@ -33,7 +44,12 @@ export function Product(product: Product) {
       </figure>
       <div className="card-body">
         <h2 className="card-title line-clamp-2" title={product.title ?? ""}>
-          {product.title ?? "No title found"}
+          <Link
+            to={`/store/product/${product.id}`}
+            className="hover:underline"
+          >
+            {product.title ?? "No title found"}
+          </Link>
         </h2>
         <p
           className="line-clamp-3 text-sm text-base-content/70"

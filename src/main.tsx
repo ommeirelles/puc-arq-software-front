@@ -4,6 +4,7 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router";
 import "./main.css";
 import { RequireAuth } from "./components/require-auth";
 import Login from "./pages/login/login";
+import ProductDetails from "./pages/product";
 import Register from "./pages/register/register";
 import Store from "./pages/store";
 import { initTelemetry } from "./telemetry";
@@ -21,6 +22,14 @@ createRoot(document.getElementById("root")!).render(
           element={
             <RequireAuth>
               <Store />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/store/product/:id"
+          element={
+            <RequireAuth>
+              <ProductDetails />
             </RequireAuth>
           }
         />
