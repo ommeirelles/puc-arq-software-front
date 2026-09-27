@@ -113,6 +113,79 @@ export const AddToCartFormSchema = z.object({
 
 export type AddToCartForm = z.infer<typeof AddToCartFormSchema>;
 
+export const CheckoutFormSchema = z.object({
+  card_number: z
+    .string()
+    .trim()
+    .min(1, "Card number is required.")
+    .refine(
+      (value) => /^\d{13,19}$/.test(value.replace(/\s/g, "")),
+      "Card number must have 13 to 19 digits."
+    ),
+  card_expiry: z
+    .string()
+    .trim()
+    .min(1, "Expiry date is required.")
+    .refine((value) => {
+      const match = /^(\d{2})\/(\d{2}|\d{4})$/.exec(value);
+      if (!match) return false;
+
+      const month = Number(match[1]);
+      let year = Number(match[2]);
+      if (month < 1 || month > 12) return false;
+      if (year < 100) year += 2000;
+
+      const today = new Date();
+      return (
+        year > today.getFullYear() ||
+        (year === today.getFullYear() && month >= today.getMonth() + 1)
+      );
+    }, "Card expiry must be a valid future date (MM/YY or MM/YYYY)."),
+  card_cvv: z
+    .string()
+    .trim()
+    .regex(/^\d{3,4}$/, "Security code must have 3 or 4 digits."),
+  cep: z
+    .string()
+    .trim()
+    .regex(/^\d{5}-?\d{3}$/, "CEP must have 8 digits, with or without the dash."),
+  street: z.string().trim().min(1, "Street is required."),
+  number: z.string().trim().min(1, "Number is required."),
+  neighborhood: z.string().trim().min(1, "Neighborhood is required."),
+  city: z.string().trim().min(1, "City is required."),
+  state: z
+    .string()
+    .trim()
+    .length(2, "State must be the 2-letter federative unit (UF)."),
+});
+
+export type CheckoutForm = z.infer<typeof CheckoutFormSchema>;
+
+export const PaymentAddressSchema = z.object({
+  cep: z.string(),
+  street: z.string(),
+  number: z.string(),
+  neighborhood: z.string(),
+  city: z.string(),
+  state: z.string(),
+});
+
+export type PaymentAddress = z.infer<typeof PaymentAddressSchema>;
+
+export const PaymentSchema = z.object({
+  id: z.number(),
+  guid: z.string().uuid(),
+  cart_guid: z.string().uuid(),
+  user_id: z.number(),
+  amount: z.number(),
+  status: z.string(),
+  card_brand: z.string(),
+  card_last4: z.string(),
+  address: PaymentAddressSchema,
+});
+
+export type Payment = z.infer<typeof PaymentSchema>;
+
 export const ApiErrorSchema = z.object({
   message: z.string(),
 });

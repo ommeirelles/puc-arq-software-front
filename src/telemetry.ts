@@ -19,7 +19,11 @@ import { ATTR_SERVICE_NAME } from "@opentelemetry/semantic-conventions";
 export function initTelemetry() {
   const endpoint: string =
     import.meta.env.VITE_OTEL_EXPORTER_OTLP_ENDPOINT ?? "http://localhost:4318";
-  const cartApiUrl: string = import.meta.env.VITE_CART_API_URL;
+  const backendApiUrls: string[] = [
+    import.meta.env.VITE_CART_API_URL,
+    import.meta.env.VITE_AUTH_API_URL,
+    import.meta.env.VITE_PAYMENT_API_URL,
+  ];
 
   const resource = defaultResource().merge(
     resourceFromAttributes({
@@ -58,9 +62,9 @@ export function initTelemetry() {
   });
   logs.setGlobalLoggerProvider(loggerProvider);
 
-  // Trace context headers are only propagated to the back-end cart API,
+  // Trace context headers are only propagated to the own back-end APIs,
   // so cross-origin requests to third-party APIs stay untouched.
-  const propagateUrls = [new RegExp(`^${cartApiUrl}`)];
+  const propagateUrls = backendApiUrls.map((url) => new RegExp(`^${url}`));
 
   registerInstrumentations({
     tracerProvider,

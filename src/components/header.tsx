@@ -121,7 +121,8 @@ export function Header({
                   </li>
                 ) : null}
                 {!isLoading && cartSummary?.items.length ? (
-                  (cartSummary?.items ?? []).map((el) => (
+                  <>
+                  {(cartSummary?.items ?? []).map((el) => (
                     <li key={el.product_id}>
                       <div
                         className="grid max-w-full items-center gap-x-2 gap-y-1"
@@ -203,7 +204,19 @@ export function Header({
                         </p>
                       </div>
                     </li>
-                  ))
+                  ))}
+                  <li>
+                    <Link
+                      to="/checkout"
+                      className="btn btn-primary btn-sm w-full mt-1"
+                    >
+                      <span className="material-symbols-outlined">
+                        payments
+                      </span>
+                      Finalize purchase
+                    </Link>
+                  </li>
+                  </>
                 ) : (
                   <li>
                     <div className="flex justify-center items-center cursor-default text-md gap-2">

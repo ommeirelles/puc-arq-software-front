@@ -7,8 +7,7 @@ cart, fetching product data directly from the external
 back-end cart API and authentication to the back-end auth API — all back-end
 APIs live in the
 [back-end repository](https://github.com/ommeirelles/puc-arq-soft-cart), which
-also includes the payment API (orchestrated by the compose file but not
-consumed by this app yet).
+also includes the payment API that finalizes the purchase at checkout.
 
 ## Stack
 
@@ -21,8 +20,9 @@ consumed by this app yet).
 
 This app is the front-end of a microservice-based system. It communicates with the
 product service (Fake Store API) for catalog data, with the cart service (the
-Flask back-end) for everything cart-related, and with the auth service (the
-Flask back-end) for user registration and authentication.
+Flask back-end) for everything cart-related, with the auth service (the
+Flask back-end) for user registration and authentication, and with the payment
+service (the Flask back-end) to finalize the purchase at checkout.
 
 ```mermaid
 flowchart LR
@@ -30,6 +30,7 @@ flowchart LR
     FE -->|"GET /products"| FSA["Fake Store API<br/>fakestoreapi.com"]
     FE -->|"Cart operations<br/>(create, add, remove, summary)"| LB["nginx load balancer<br/>:8000 (cart) · :8001 (auth) · :8002 (payment)"]
     FE -->|"POST /user · POST /login<br/>GET /user"| LB
+    FE -->|"POST /pay/&lt;cart_guid&gt;"| LB
     LB -->|"round-robin"| BE["Cart API ×3 replicas<br/>Flask · :8000"]
     LB -->|"round-robin"| AUTH["Auth API ×3 replicas<br/>Flask · :8001"]
     LB -->|"round-robin"| PAY["Payment API ×3 replicas<br/>Flask · :8002"]
@@ -42,10 +43,6 @@ flowchart LR
     AUTH --> AUTHDB[("PostgreSQL<br/>soft-arq-auth-db · :5432")]
     PAY --> PAYDB[("PostgreSQL<br/>soft-arq-payment-db · :5432")]
 ```
-
-> The payment API (`POST /pay/<cart_guid>`) is part of the compose stack but
-> is not consumed by this app yet — payments are triggered directly against
-> the API for now.
 
 > **Design choice — horizontal scaling:** each back-end service runs **3
 > replicas** (`deploy.replicas` in the compose file) behind an **nginx load
@@ -69,10 +66,14 @@ Key implementation points:
 
 - Routing is handled by `react-router`: the login page is the index route (`/`),
   user registration lives at `/register`, the store catalog lives at `/store`,
-  and the product details page lives at `/store/product/:id` — both guarded by
-  `RequireAuth`. When no token is present in `sessionStorage` (key
+  the product details page lives at `/store/product/:id`, and the checkout
+  lives at `/checkout` (with the confirmation at `/checkout/success`) — the
+  store, product and checkout routes are guarded by `RequireAuth`. When no
+  token is present in `sessionStorage` (key
   `auth_token`), the guard clears the session (token and cart GUID) and redirects
-  to the login page.
+  to the login page. Every route is lazy-loaded (`React.lazy` + `Suspense` with
+  a full-screen loading fallback), so each page ships as its own chunk and is
+  only fetched when first navigated to.
 - Clicking a product card in the catalog (image, text, or title link) navigates
   to the product details page (`src/pages/product/index.tsx`), which fetches
   the product from `GET /products/{id}` and displays all of its information:
@@ -86,6 +87,19 @@ Key implementation points:
   selected in the filter panel. The header is reused without the
   search input (which only filters the catalog listing), and the logo links
   back to `/store`.
+- The checkout page (`src/pages/checkout/index.tsx`, route `/checkout`)
+  finalizes the cart through the payment API: it shows an order summary (items
+  with image, quantity and subtotal, plus the total) next to a payment form
+  (card number, expiry and CVV, validated with Zod — the expiry must be a
+  future date) and a delivery address form. Typing a valid 8-digit CEP
+  auto-fills the street, neighborhood, city and state from the ViaCEP API
+  (the fields stay editable). Submitting calls `POST /pay/<cart_guid>`: when
+  the payment is approved the cart GUID is removed from `localStorage` and the
+  app navigates to the confirmation page (`src/pages/checkout/success.tsx`,
+  route `/checkout/success`), a stub that informs the order is ready and will
+  be shipped to the address provided; when the payment is declined a warning
+  is shown and the cart is kept so the user can try again. An empty cart
+  renders an empty state with a link back to the store.
 - Authentication is **JWT-based**: the auth API issues a signed token on login,
   stored in `sessionStorage` under the key `auth_token`. Logout is client-side —
   the token is simply discarded.
@@ -97,7 +111,9 @@ Key implementation points:
   it fall back to matching the image URL and category. On mobile the header
   stacks in two rows: the Fake Store APP logo centered on top, and the search
   input plus cart basket below (the logout button is hidden — logout lives in
-  the mobile dock), and the cart dropdown adapts to the viewport width. Product
+  the mobile dock), and the cart dropdown adapts to the viewport width. When
+  the cart has items, the dropdown ends with a "Finalize purchase" button that
+  navigates to the checkout. Product
   images use native lazy loading (`loading="lazy"`) so they only load when they
   enter the viewport.
 - The store catalog can be filtered by category through a side panel
@@ -134,6 +150,10 @@ Key implementation points:
     retried once with a freshly created cart.
   - `auth.ts` — `AuthService`, a singleton that registers users and authenticates
     through the back-end auth API, storing the returned JWT in `sessionStorage`.
+  - `payment.ts` — `PaymentService`, a singleton that pays a cart through the
+    back-end payment API (`POST /pay/<cart_guid>`), returning the registered
+    payment (card brand + last 4 digits, amount, status and delivery address)
+    for both approved and declined outcomes.
 - Shared types and Zod schemas live in `src/types.ts`.
 
 ## External API
@@ -161,6 +181,7 @@ adjust the values if needed:
 | `VITE_FAKE_STORE_API_URL`         | `https://fakestoreapi.com`    | Product catalog source                           |
 | `VITE_CART_API_URL`               | `http://localhost:8000`       | Back-end cart API base URL                       |
 | `VITE_AUTH_API_URL`               | `http://localhost:8001`       | Back-end auth API base URL                       |
+| `VITE_PAYMENT_API_URL`            | `http://localhost:8002`       | Back-end payment API base URL                    |
 | `VITE_OTEL_EXPORTER_OTLP_ENDPOINT`| `http://localhost:4318`       | OTLP HTTP collector endpoint (traces, metrics, logs) |
 | `VITE_OTEL_SERVICE_NAME`          | `puc-arq-software-front`      | Service name reported in telemetry               |
 
