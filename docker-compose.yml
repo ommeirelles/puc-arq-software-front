@@ -16,7 +16,8 @@ services:
       - "4173:80"
 
   soft-arq-cart:
-    build: ../puc-arq-soft-api/cart
+    build:
+      context: https://github.com/ommeirelles/puc-arq-soft-api.git#master:cart
     deploy:
       replicas: 3
     networks:
@@ -31,23 +32,15 @@ services:
       - OTEL_SERVICE_NAME=puc-arq-soft-cart
       - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
-    volumes:
-      - ../puc-arq-soft-api/cart/src:/app/src
     depends_on:
       otel-collector:
         condition: service_started
       soft-arq-cart-db:
         condition: service_healthy
-    develop:
-      watch:
-        - action: sync
-          path: ../puc-arq-soft-api/cart/src
-          target: /app/src
-        - action: rebuild
-          path: ../puc-arq-soft-api/cart/requirements.txt
 
   soft-arq-auth:
-    build: ../puc-arq-soft-api/auth
+    build:
+      context: https://github.com/ommeirelles/puc-arq-soft-api.git#master:auth
     deploy:
       replicas: 3
     networks:
@@ -60,23 +53,15 @@ services:
       - OTEL_SERVICE_NAME=puc-arq-soft-auth
       - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
-    volumes:
-      - ../puc-arq-soft-api/auth/src:/app/src
     depends_on:
       otel-collector:
         condition: service_started
       soft-arq-auth-db:
         condition: service_healthy
-    develop:
-      watch:
-        - action: sync
-          path: ../puc-arq-soft-api/auth/src
-          target: /app/src
-        - action: rebuild
-          path: ../puc-arq-soft-api/auth/requirements.txt
 
   soft-arq-payment:
-    build: ../puc-arq-soft-api/payment
+    build:
+      context: https://github.com/ommeirelles/puc-arq-soft-api.git#master:payment
     deploy:
       replicas: 3
     networks:
@@ -92,20 +77,11 @@ services:
       - OTEL_SERVICE_NAME=puc-arq-soft-payment
       - OTEL_EXPORTER_OTLP_PROTOCOL=grpc
       - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
-    volumes:
-      - ../puc-arq-soft-api/payment/src:/app/src
     depends_on:
       otel-collector:
         condition: service_started
       soft-arq-payment-db:
         condition: service_healthy
-    develop:
-      watch:
-        - action: sync
-          path: ../puc-arq-soft-api/payment/src
-          target: /app/src
-        - action: rebuild
-          path: ../puc-arq-soft-api/payment/requirements.txt
 
   soft-arq-lb:
     container_name: arq-soft-lb
